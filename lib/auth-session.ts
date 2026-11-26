@@ -14,7 +14,7 @@ export async function persistSessionFromResponse(response: Response): Promise<vo
     throw new Error("Server tidak mengirim sesi login. Periksa konfigurasi API.");
   }
 
-  const match = setCookie.match(/(?:^|[,;\\s])heypost_session=([^;,\\s]+)/);
+  const match = setCookie.match(/(?:^|[,;\s])heypost_session=([^;,\s]+)/);
   if (!match?.[1]) {
     throw new Error("Token sesi tidak ditemukan pada respons server.");
   }

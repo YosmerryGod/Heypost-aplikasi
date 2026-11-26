@@ -56,7 +56,7 @@ Matriks rinci dan status implementasi akan dicatat pada `docs/feature-parity.md`
 ## Tahapan pembangunan
 
 1. **Fondasi** — konfigurasi Expo, navigasi, tema, struktur modul, dan pemeriksaan TypeScript.
-2. **Autentikasi** — sesi aman, login owner, registrasi, login barcode/PIN, dan logout.
+2. **Autentikasi** — login owner (email/password), login karyawan (barcode/PIN), pemulihan sesi, dan logout sudah dihubungkan ke backend; registrasi dan Google OAuth masih berikutnya. Pengujian perangkat belum dilakukan.
 3. **POS** — katalog, kategori, keranjang, checkout, dan transaksi.
 4. **Operasional** — produk/stok, riwayat transaksi, laporan, outlet, karyawan, dan pengeluaran.
 5. **Struk & perangkat** — pengaturan struk, printer Android, serta evaluasi kompatibilitas iOS.

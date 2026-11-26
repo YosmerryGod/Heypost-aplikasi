@@ -56,11 +56,11 @@ Matriks rinci dan status implementasi akan dicatat pada `docs/feature-parity.md`
 ## Tahapan pembangunan
 
 1. **Fondasi** — konfigurasi Expo, navigasi, tema, struktur modul, dan pemeriksaan TypeScript.
-2. **Autentikasi** — login owner (email/password), login karyawan (barcode/PIN), pemulihan sesi, dan logout sudah dihubungkan ke backend; registrasi dan Google OAuth masih berikutnya. Pengujian perangkat belum dilakukan.
-3. **POS** — katalog, kategori, keranjang, checkout, dan transaksi.
-4. **Operasional** — produk/stok, riwayat transaksi, laporan, outlet, karyawan, dan pengeluaran.
-5. **Struk & perangkat** — pengaturan struk, printer Android, serta evaluasi kompatibilitas iOS.
-6. **QA & rilis** — uji perangkat fisik, izin role, integrasi backend, build Android/iOS, dan persiapan distribusi.
+2. **Autentikasi** — login owner, registrasi, login karyawan dengan barcode/PIN manual, pemulihan sesi, dan logout terhubung ke backend. Google OAuth dan pemindai QR kamera masih memerlukan integrasi native/deep-link.
+3. **POS** — katalog, pencarian, kategori, keranjang, validasi stok, diskon, pelanggan, checkout tunai/kartu sudah diimplementasikan. Struk cetak belum tersedia.
+4. **Operasional** — produk/stok, riwayat harian, pembatalan transaksi owner, laporan, outlet, karyawan, pengeluaran, dan pengaturan struk sudah memiliki layar native dan integrasi API inti. Beberapa operasi lanjutan masih tercatat di matriks.
+5. **Struk & perangkat** — preferensi struk tersambung ke backend; preferensi printer lokal tersimpan per perangkat. Pairing Bluetooth dan cetak ESC/POS belum tersedia.
+6. **QA & rilis** — TypeScript, Expo Doctor, dan export bundle Android/iOS berhasil. Pengujian perangkat fisik, seluruh role, printer, dan rilis produksi masih diperlukan.
 
 ## Menjalankan proyek
 

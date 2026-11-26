@@ -1,35 +1,56 @@
 # Matriks Kesetaraan Fitur HeyPost
 
-Dokumen ini melacak cakupan aplikasi mobile terhadap aplikasi web dan kontrak backend yang diperiksa. Status mencerminkan implementasi kode dan bukti pengujian secara terpisah. Kode yang belum diuji pada perangkat tidak dianggap selesai.
+Status ini memisahkan implementasi kode dari verifikasi pada perangkat nyata. Tampilan mobile mengikuti identitas visual HeyPost Web (warna hijau pinus, Archivo, Figtree, permukaan putih, garis pemisah tipis, dan komponen native). Backend tetap menjadi sumber data dan otorisasi.
 
-| Area | Kapabilitas | Akses | Sumber kontrak | Status |
-| --- | --- | --- | --- | --- |
-| Autentikasi | Registrasi owner | Publik | `auth.register` | Belum diimplementasikan |
-| Autentikasi | Login email/password | Publik | `auth.login` | Kode terhubung; belum diuji pada perangkat |
-| Autentikasi | Login Google OAuth | Owner | Endpoint backend OAuth; alur callback mobile perlu dirancang | Perlu investigasi |
-| Autentikasi | Login barcode + PIN 6 digit | Karyawan | `auth.employeeLogin` | Kode terhubung; belum diuji pada perangkat |
-| Autentikasi | Memuat sesi dan logout | Semua role | `auth.me`, `auth.logout` | Kode terhubung; belum diuji pada perangkat |
-| Outlet | Daftar dan pindah outlet | Owner | `store.switchOutlet` | Belum diimplementasikan |
-| Outlet | Membuat dan mengubah outlet | Owner | `store.createOutlet`, `store.updateOutlet` | Belum diimplementasikan |
-| POS | Bootstrap katalog dan kategori | Semua role | `pos.bootstrap`, `pos.listProducts` | Belum diimplementasikan |
-| POS | Keranjang dan checkout | Semua role dengan `pos.access` | `pos.createTransaction` | Belum diimplementasikan |
-| POS | Mengubah/membatalkan transaksi | Berdasarkan izin backend | `pos.updateTransaction`, `pos.cancelTransaction` | Belum diimplementasikan |
-| Transaksi | Riwayat transaksi dan detail item | Berdasarkan `history.daily.view` | `pos.transactions` | Belum diimplementasikan |
-| Produk | Kategori, produk, gambar, status aktif | Owner/manager sesuai izin | `pos.createCategory`, `pos.createProduct`, `pos.updateProduct`, `pos.archiveProduct` | Belum diimplementasikan |
-| Laporan | Ringkasan penjualan | Owner/manager | `pos.summary` | Belum diimplementasikan |
-| Laporan | Rekap seluruh outlet | Owner | `pos.summary(allOutlets: true)` | Belum diimplementasikan |
-| Karyawan | Daftar, buat, ubah, regenerasi barcode | Owner | `employees.*` | Belum diimplementasikan |
-| Pengeluaran | Daftar, catat, batalkan | Owner/manager | `expenses.*` | Belum diimplementasikan |
-| Struk | Ambil dan ubah preferensi struk | Owner | `store.getReceiptSettings`, `store.updateReceiptSettings` | Belum diimplementasikan |
-| Printer | Temukan, pasangkan, koneksikan printer Android | Owner melalui pengaturan perangkat | Modul native yang akan dibuat | Perlu implementasi |
-| Printer | Cetak ESC/POS dan status hasil cetak | Owner melalui pengaturan perangkat | Modul native yang akan dibuat | Perlu implementasi |
-| Printer | Cetak iOS | Bergantung pada BLE/MFi/protokol printer | Modul native iOS dan verifikasi perangkat | Perlu investigasi |
+| Area | Kapabilitas | Status kode | Catatan verifikasi |
+| --- | --- | --- | --- |
+| Autentikasi | Login email/password | Terhubung | Perlu uji perangkat dan sesi produksi |
+| Autentikasi | Registrasi owner/toko/outlet | Terhubung | Perlu uji validasi dan pembuatan sesi |
+| Autentikasi | Login barcode + PIN | Terhubung | Input manual tersedia; pemindai QR kamera belum dibuat |
+| Autentikasi | Login Google OAuth | Belum | Redirect backend saat ini kembali ke frontend web; perlu rancangan deep-link dan konfigurasi backend |
+| Autentikasi | Pemulihan sesi dan logout | Terhubung | Token disimpan dengan SecureStore |
+| POS | Katalog, kategori, pencarian | Terhubung | Menggunakan pos.bootstrap |
+| POS | Keranjang dan batas stok | Terhubung | Keranjang lokal; stok diverifikasi lagi sebelum checkout |
+| POS | Checkout tunai/kartu | Terhubung | QRIS tidak ditampilkan karena UI web saat ini tidak menyediakan opsi tersebut |
+| POS | Diskon, pelanggan, jenis pesanan | Terhubung | Perlu uji alur pembayaran nyata |
+| POS | Struk transaksi dan cetak ulang | Belum | Perlu modul output/cetak native |
+| Transaksi | Riwayat harian dan detail invoice | Terhubung | Tampilan daftar dan detail dasar |
+| Transaksi | Pembatalan transaksi oleh owner | Terhubung | Invalidasi transaksi, laporan, dan stok |
+| Transaksi | Edit transaksi oleh owner | Belum | Perlu menyelesaikan UI edit item dan validasi |
+| Transaksi | Ekspor CSV | Belum | Belum diuji pada Android/iOS |
+| Produk | Daftar, pencarian, kategori | Terhubung | Data mengikuti outlet aktif |
+| Produk | Tambah kategori/produk | Terhubung | Upload foto produk belum tersedia |
+| Produk | Edit harga/menu dan stok | Terhubung | UI membatasi field berdasarkan izin |
+| Produk | Aktif/nonaktif dan arsip | Terhubung | Bergantung izin backend |
+| Laporan | Ringkasan, tren, metode bayar, produk terlaris | Terhubung | Perlu uji angka terhadap web |
+| Laporan | Rentang hari/minggu/bulan/semua | Terhubung | Filter menggunakan pos.summary |
+| Laporan | Cakupan semua outlet | Terhubung | Owner saja |
+| Laporan | Ekspor laporan | Belum | Perlu implementasi |
+| Outlet | Daftar dan pindah outlet | Terhubung | Cache query outlet di-refresh |
+| Outlet | Membuat outlet | Terhubung | Perlu uji data dan izin |
+| Outlet | Mengubah/nonaktifkan outlet | Belum | Perlu implementasi |
+| Karyawan | Daftar, tambah, role, outlet | Terhubung | Owner saja |
+| Karyawan | Aktif/nonaktif dan regenerasi barcode | Terhubung | Barcode ditampilkan dari respons backend |
+| Karyawan | Edit izin dan detail karyawan | Belum | Perlu implementasi |
+| Pengeluaran | Daftar dan filter tanggal | Terhubung | Akses mengikuti permission |
+| Pengeluaran | Catat biaya | Terhubung | Form tersedia dari Riwayat Harian |
+| Pengeluaran | Batalkan biaya | Terhubung | Owner saja |
+| Struk | Preferensi konten dan footer | Terhubung | Disimpan pada backend |
+| Printer | Preferensi ukuran kertas/salinan/auto-print | Terhubung lokal | Disimpan di SecureStore per perangkat |
+| Printer | Pairing Bluetooth dan cetak ESC/POS | Belum | Perlu model printer, protokol, dan native bridge Android; kompatibilitas iOS harus diverifikasi |
 
-## Aturan kesetaraan
+## Batas implementasi yang disengaja
 
-- Hak akses final selalu divalidasi backend; menyembunyikan tombol di mobile bukan kontrol keamanan.
-- Jangan menampilkan metode pembayaran atau opsi yang belum benar-benar didukung alur backend dan UI yang telah diverifikasi.
-- Kontrak tipe frontend menunjukkan enum pembayaran Tunai, QRIS, dan Kartu, sedangkan README frontend menyatakan UI web saat ini hanya menampilkan Tunai dan Kartu. Perbedaan ini harus diperiksa sebelum implementasi checkout mobile.
-- Google OAuth perlu meninjau callback/deep link mobile; jangan menganggap redirect web saat ini langsung cocok untuk aplikasi native.
-- Offline cache tidak boleh dianggap sebagai transaksi yang berhasil tersimpan.
-- Fitur printer harus melaporkan status koneksi dan hasil kirim data yang nyata, bukan hanya menyimpan nama perangkat.
+- Tidak menggunakan WebView. Semua layar memakai React Native dan Expo Router.
+- Transaksi dan perubahan stok selalu dikonfirmasi backend; cache lokal bukan bukti transaksi berhasil.
+- Preferensi printer disimpan lokal per perangkat. Tombol pairing belum mengaku terhubung karena transport Bluetooth native belum tersedia.
+- Login Google belum diarahkan ke aplikasi sampai backend menyediakan callback deep-link yang aman. Mengubah GOOGLE_SUCCESS_URL global secara langsung akan mengganggu login web.
+- Jangan menandai fitur sebagai selesai sebelum alur sukses, gagal, izin, dan pemulihan diuji pada perangkat Android/iOS.
+
+## Pemeriksaan yang telah dijalankan
+
+- npm run typecheck
+- npx expo-doctor
+- npx expo export --platform android
+
+Pemeriksaan bundle Android berhasil pada tahap implementasi ini. Pengujian perangkat fisik, iOS, printer, dan seluruh alur produksi masih diperlukan.

@@ -1,0 +1,12 @@
+// [ADDED] Owner registration connected to auth.register.
+import { useState } from "react";
+import { router } from "expo-router";
+import { Alert } from "react-native";
+import { ActionButton, AppScreen, Field, PageHeading } from "@/components/native-ui";
+import { trpc } from "@/providers/trpc";
+export default function RegisterScreen(){
+ const utils=trpc.useUtils();const [name,setName]=useState("");const [storeName,setStoreName]=useState("");const [outletName,setOutletName]=useState("");const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [confirm,setConfirm]=useState("");
+ const register=trpc.auth.register.useMutation({onSuccess:async()=>{await utils.auth.me.invalidate();router.replace("/");},onError:e=>Alert.alert("Registrasi gagal",e.message)});
+ const submit=()=>{if(password.length<8)return Alert.alert("Password terlalu pendek","Gunakan minimal 8 karakter.");if(password!==confirm)return Alert.alert("Password tidak sama","Periksa konfirmasi password.");register.mutate({name:name.trim(),storeName:storeName.trim(),outletName:outletName.trim()||undefined,email:email.trim(),password});};
+ return <AppScreen><PageHeading eyebrow="MULAI BERSAMA HEYPOST" title="Buat akun" subtitle="Daftarkan owner dan toko untuk mulai menggunakan HeyPost."/><Field label="Nama lengkap" value={name} onChangeText={setName} placeholder="Nama Anda"/><Field label="Nama toko" value={storeName} onChangeText={setStoreName} placeholder="Nama bisnis"/><Field label="Nama outlet (opsional)" value={outletName} onChangeText={setOutletName} placeholder="Outlet utama"/><Field label="Email" value={email} onChangeText={setEmail} placeholder="nama@email.com" keyboardType="email-address" autoCapitalize="none"/><Field label="Password (minimal 8 karakter)" value={password} onChangeText={setPassword} placeholder="Buat password" secureTextEntry/><Field label="Ulangi password" value={confirm} onChangeText={setConfirm} placeholder="Ulangi password" secureTextEntry/><ActionButton title="Buat akun & buka toko" loading={register.isPending} disabled={!name.trim()||!storeName.trim()||!email.trim()||!password||!confirm} onPress={submit}/><ActionButton title="Sudah punya akun? Masuk" secondary onPress={()=>router.replace("/login")}/></AppScreen>;
+}

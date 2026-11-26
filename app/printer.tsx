@@ -1,0 +1,16 @@
+// [ADDED] Device-local printer preferences; Bluetooth transport is deliberately not simulated without a native printer bridge.
+import { useEffect, useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { Alert, StyleSheet, Switch, Text, View } from "react-native";
+import { ActionButton, AppScreen, PageHeading, Panel } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+type PrinterPrefs={deviceName:string;deviceId:string;paperWidth:"58"|"80";copies:1|2|3;autoPrint:boolean};
+const KEY="heypost.printer.preferences";
+const initial:PrinterPrefs={deviceName:"",deviceId:"",paperWidth:"58",copies:1,autoPrint:false};
+export default function PrinterScreen(){
+ const [prefs,setPrefs]=useState(initial);const [loaded,setLoaded]=useState(false);
+ useEffect(()=>{void SecureStore.getItemAsync(KEY).then(value=>{if(value){try{setPrefs({...initial,...JSON.parse(value)});}catch{Alert.alert("Pengaturan printer","Preferensi lokal tidak dapat dibaca.");}}}).finally(()=>setLoaded(true));},[]);
+ const update=async(next:PrinterPrefs)=>{setPrefs(next);await SecureStore.setItemAsync(KEY,JSON.stringify(next));};
+ return <AppScreen><PageHeading eyebrow="PERANGKAT INI" title="Printer Bluetooth" subtitle="Preferensi disimpan secara lokal pada HP ini."/><Panel><Text style={s.name}>{prefs.deviceName||"Belum ada printer terhubung"}</Text><Text style={s.muted}>Koneksi Bluetooth belum tersedia pada binary aplikasi ini. Dibutuhkan modul native Android dan pengujian protokol printer agar proses pairing serta cetak benar-benar berfungsi.</Text><ActionButton title="Hubungkan printer" disabled={!loaded} secondary onPress={()=>Alert.alert("Modul printer belum tersedia","Fitur pairing membutuhkan native build dengan driver printer yang sesuai. Pengaturan kertas dapat disiapkan terlebih dahulu.")}/></Panel><Panel><Text style={s.name}>Ukuran kertas</Text><View style={s.row}><ActionButton title="58 mm" compact secondary={prefs.paperWidth!=="58"} onPress={()=>void update({...prefs,paperWidth:"58"})}/><ActionButton title="80 mm" compact secondary={prefs.paperWidth!=="80"} onPress={()=>void update({...prefs,paperWidth:"80"})}/></View><Text style={s.name}>Jumlah salinan</Text><View style={s.row}>{([1,2,3] as const).map(v=><ActionButton key={v} title={`${v}×`} compact secondary={prefs.copies!==v} onPress={()=>void update({...prefs,copies:v})}/>)}</View><View style={s.row}><View style={{flex:1,gap:3}}><Text style={s.name}>Cetak otomatis</Text><Text style={s.muted}>Aktifkan setelah koneksi printer tersedia.</Text></View><Switch value={prefs.autoPrint} onValueChange={value=>void update({...prefs,autoPrint:value})} trackColor={{true:theme.colors.signal}}/></View></Panel><Text style={s.muted}>Preferensi printer tidak disinkronkan ke akun. Saat login pada HP lain, printer perlu dikonfigurasi kembali.</Text></AppScreen>;
+}
+const s=StyleSheet.create({name:{fontSize:14,fontWeight:"800",color:theme.colors.ink},muted:{fontSize:12,lineHeight:18,color:theme.colors.muted},row:{flexDirection:"row",alignItems:"center",gap:10}});

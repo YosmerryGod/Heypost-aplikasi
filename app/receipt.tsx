@@ -1,0 +1,17 @@
+// [ADDED] Receipt preference editor connected to the store settings API.
+import { useEffect, useState } from "react";
+import { Alert, StyleSheet, Switch, Text, View } from "react-native";
+import { ActionButton, AppScreen, ErrorState, Field, LoadingState, PageHeading, Panel } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+type Draft={showLogo:boolean;showStoreName:boolean;showOutletName:boolean;showAddress:boolean;showWhatsapp:boolean;showCashier:boolean;showCustomer:boolean;showHeyPostWatermark:boolean;footerMessage:string};
+const defaults:Draft={showLogo:true,showStoreName:true,showOutletName:true,showAddress:true,showWhatsapp:true,showCashier:true,showCustomer:true,showHeyPostWatermark:true,footerMessage:""};
+const options:[keyof Omit<Draft,"footerMessage">,string][]=[["showLogo","Logo toko"],["showStoreName","Nama toko"],["showOutletName","Nama outlet"],["showAddress","Alamat"],["showWhatsapp","Nomor WhatsApp"],["showCashier","Nama kasir"],["showCustomer","Nama pelanggan"],["showHeyPostWatermark","Watermark HeyPost"]];
+export default function ReceiptScreen(){
+ const utils=trpc.useUtils();const query=trpc.store.getReceiptSettings.useQuery();const [draft,setDraft]=useState<Draft>(defaults);
+ useEffect(()=>{if(query.data)setDraft({...query.data,footerMessage:query.data.footerMessage??""});},[query.data]);
+ const save=trpc.store.updateReceiptSettings.useMutation({onSuccess:async()=>{await utils.store.getReceiptSettings.invalidate();Alert.alert("Tersimpan","Pengaturan struk diperbarui.");},onError:e=>Alert.alert("Gagal menyimpan",e.message)});
+ if(query.isLoading)return <AppScreen><LoadingState/></AppScreen>;if(query.error)return <AppScreen><ErrorState message={query.error.message} retry={()=>void query.refetch()}/></AppScreen>;
+ return <AppScreen><PageHeading eyebrow="PREFERENSI TOKO" title="Pengaturan struk" subtitle="Atur informasi yang ditampilkan pada struk pelanggan."/><Panel><Text style={s.heading}>Informasi struk</Text>{options.map(([key,label])=><View key={key} style={s.row}><Text style={s.label}>{label}</Text><Switch value={draft[key]} onValueChange={value=>setDraft(old=>({...old,[key]:value}))} trackColor={{true:theme.colors.signal}}/></View>)}<Field label="Pesan footer" value={draft.footerMessage} onChangeText={value=>setDraft(old=>({...old,footerMessage:value.slice(0,300)}))} placeholder="Terima kasih telah berbelanja." multiline/><Text style={s.muted}>{draft.footerMessage.length}/300 karakter</Text></Panel><Panel><Text style={s.heading}>Pratinjau</Text>{draft.showStoreName?<Text style={s.preview}>{query.data?.storeId?"Nama toko":""}</Text>:null}{draft.showOutletName?<Text style={s.muted}>Nama outlet</Text>:null}<Text style={s.preview}>INVOICE · 000001</Text><Text style={s.muted}>1 × Produk contoh</Text><Text style={s.preview}>Total Rp25.000</Text>{draft.footerMessage?<Text style={s.muted}>{draft.footerMessage}</Text>:null}</Panel><ActionButton title="Simpan pengaturan struk" loading={save.isPending} onPress={()=>save.mutate({...draft,footerMessage:draft.footerMessage.trim()||null})}/></AppScreen>;
+}
+const s=StyleSheet.create({heading:{fontSize:15,fontWeight:"800",color:theme.colors.ink},row:{minHeight:44,flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:10},label:{fontSize:13,color:theme.colors.ink,fontWeight:"600"},muted:{fontSize:11,color:theme.colors.muted},preview:{fontSize:14,fontWeight:"800",color:theme.colors.ink,textAlign:"center"}});

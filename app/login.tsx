@@ -261,6 +261,11 @@ export default function LoginScreen() {
               <Text style={styles.notice}>
                 Terhubung ke server HeyPost. Sesi login disimpan secara aman di perangkat ini.
               </Text>
+              {!employeeMode ? (
+                <Pressable accessibilityRole="button" onPress={() => router.push("/register")}>
+                  <Text style={styles.notice}>Belum punya akun? Daftar sekarang</Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
 
@@ -313,7 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.signal,
     transform: [{ rotate: "-8deg" }],
   },
-  brandName: {
+  brandName: { fontFamily: "Archivo-ExtraBold",
     color: theme.colors.ink,
     fontSize: 25,
     fontWeight: "800",
@@ -342,7 +347,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.2,
   },
-  heroTitle: {
+  heroTitle: { fontFamily: "Archivo-ExtraBold",
     marginTop: 9,
     color: "#153d2f",
     fontSize: 39,
@@ -501,7 +506,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardHeading: { gap: 7 },
-  cardTitle: {
+  cardTitle: { fontFamily: "Archivo-Bold",
     color: "#15291f",
     fontSize: 23,
     lineHeight: 29,
@@ -582,7 +587,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: theme.colors.signal,
   },
-  primaryButtonText: { color: theme.colors.surface, fontSize: 14, fontWeight: "800" },
+  primaryButtonText: { fontFamily: "Figtree-Bold", color: theme.colors.surface, fontSize: 14, fontWeight: "800" },
   primaryArrow: { color: "#fff", fontSize: 22, lineHeight: 24, marginTop: -2 },
   disabledButton: { opacity: 0.48 },
   pressed: { opacity: 0.82 },

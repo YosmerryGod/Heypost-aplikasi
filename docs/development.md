@@ -56,4 +56,4 @@ npm run ios
 
 ## Status saat ini
 
-Fondasi Expo, tema, navigasi, provider tRPC, login owner (email/password), login karyawan (barcode/PIN), pemulihan sesi melalui auth.me, dan logout telah dihubungkan ke kontrak backend. Token sesi disimpan melalui SecureStore. Build Android/iOS, typecheck, dan pengujian perangkat belum dijalankan.
+Fondasi Expo, tema HeyPost (Archivo/Figtree), navigasi native, login dan registrasi owner, login karyawan manual (barcode/PIN), POS checkout, transaksi harian, produk/stok, laporan, outlet, karyawan, pengeluaran, pengaturan struk, serta preferensi printer lokal telah diimplementasikan pada kode. Token sesi disimpan melalui SecureStore. Google OAuth, pemindai QR kamera, cetak struk Bluetooth, beberapa operasi lanjutan, dan pengujian perangkat fisik masih tertunda. TypeScript, Expo Doctor, serta export bundle Android dan iOS telah berhasil dijalankan.

@@ -51,7 +51,7 @@ export default function LoginScreen() {
   }
 
   const canSubmit = employeeMode
-    ? barcode.trim().length >= 20 && /^\\d{6}$/.test(pin)
+    ? barcode.trim().length >= 20 && /^\d{6}$/.test(pin)
     : email.trim().length > 3 && password.length > 0;
 
   return (

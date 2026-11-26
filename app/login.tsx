@@ -68,7 +68,7 @@ export default function LoginScreen() {
 
           <Pressable
             accessibilityRole="button"
-            disabled={!email.trim() || !password}
+            disabled
             onPress={handleContinue}
             style={({ pressed }) => [
               styles.primaryButton,
@@ -76,7 +76,7 @@ export default function LoginScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.primaryButtonText}>Masuk</Text>
+            <Text style={styles.primaryButtonText}>Autentikasi segera tersedia</Text>
           </Pressable>
 
           <Text style={styles.notice}>

@@ -50,10 +50,10 @@ npm run ios
 
 - Jangan memasukkan secret backend, Google OAuth client secret, password, PIN, barcode plaintext, atau kredensial produksi ke variabel `EXPO_PUBLIC_*`.
 - Semua variabel `EXPO_PUBLIC_*` tertanam dalam bundle aplikasi dan dapat dibaca pengguna.
-- Token/sesi hanya boleh disimpan menggunakan penyimpanan aman platform setelah alur autentikasi dirancang.
+- Token sesi disimpan melalui Expo SecureStore. Request tRPC mengirimkannya sebagai Authorization Bearer; backend memvalidasi token yang sama dengan sesi cookie.
 - Jangan mencatat data autentikasi ke console atau crash report.
 - Backend tetap menjadi sumber otorisasi dan kebenaran transaksi.
 
 ## Status saat ini
 
-Fondasi Expo, navigasi awal, tema, layar pembuka, dan kerangka layar login telah dibuat. Layar login belum terhubung ke backend. Belum ada build Android/iOS atau pengujian perangkat yang dijalankan.
+Fondasi Expo, tema, navigasi, provider tRPC, login owner (email/password), login karyawan (barcode/PIN), pemulihan sesi melalui auth.me, dan logout telah dihubungkan ke kontrak backend. Token sesi disimpan melalui SecureStore. Build Android/iOS, typecheck, dan pengujian perangkat belum dijalankan.

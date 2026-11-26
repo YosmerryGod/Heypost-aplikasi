@@ -6,7 +6,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "plugins": [
       "expo-router",
       [
@@ -25,8 +24,23 @@
       "bundleIdentifier": "tech.doodweb.heypost"
     },
     "android": {
-      "package": "tech.doodweb.heypost",
-      "edgeToEdgeEnabled": true
+      "package": "tech.doodweb.heypost"
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "ec28fa30-ca43-4e2c-9b32-5392eb51ec81"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ec28fa30-ca43-4e2c-9b32-5392eb51ec81"
     }
   }
 }

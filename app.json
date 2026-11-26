@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "HeyPost",
+    "slug": "heypost-aplikasi",
+    "scheme": "heypost",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Izinkan HeyPost menggunakan Face ID untuk melindungi sesi akun."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "tech.doodweb.heypost"
+    },
+    "android": {
+      "package": "tech.doodweb.heypost",
+      "edgeToEdgeEnabled": true
+    }
+  }
+}

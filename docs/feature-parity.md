@@ -1,14 +1,14 @@
 # Matriks Kesetaraan Fitur HeyPost
 
-Dokumen ini melacak cakupan aplikasi mobile terhadap aplikasi web dan kontrak backend yang diperiksa. Status awal seluruh fitur adalah **Belum diimplementasikan** sampai ada kode dan bukti pengujian.
+Dokumen ini melacak cakupan aplikasi mobile terhadap aplikasi web dan kontrak backend yang diperiksa. Status mencerminkan implementasi kode dan bukti pengujian secara terpisah. Kode yang belum diuji pada perangkat tidak dianggap selesai.
 
 | Area | Kapabilitas | Akses | Sumber kontrak | Status |
 | --- | --- | --- | --- | --- |
 | Autentikasi | Registrasi owner | Publik | `auth.register` | Belum diimplementasikan |
-| Autentikasi | Login email/password | Publik | `auth.login` | Belum diimplementasikan |
+| Autentikasi | Login email/password | Publik | `auth.login` | Kode terhubung; belum diuji pada perangkat |
 | Autentikasi | Login Google OAuth | Owner | Endpoint backend OAuth; alur callback mobile perlu dirancang | Perlu investigasi |
-| Autentikasi | Login barcode + PIN 6 digit | Karyawan | `auth.employeeLogin` | Belum diimplementasikan |
-| Autentikasi | Memuat sesi dan logout | Semua role | `auth.me`, `auth.logout` | Belum diimplementasikan |
+| Autentikasi | Login barcode + PIN 6 digit | Karyawan | `auth.employeeLogin` | Kode terhubung; belum diuji pada perangkat |
+| Autentikasi | Memuat sesi dan logout | Semua role | `auth.me`, `auth.logout` | Kode terhubung; belum diuji pada perangkat |
 | Outlet | Daftar dan pindah outlet | Owner | `store.switchOutlet` | Belum diimplementasikan |
 | Outlet | Membuat dan mengubah outlet | Owner | `store.createOutlet`, `store.updateOutlet` | Belum diimplementasikan |
 | POS | Bootstrap katalog dan kategori | Semua role | `pos.bootstrap`, `pos.listProducts` | Belum diimplementasikan |

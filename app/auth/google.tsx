@@ -61,7 +61,7 @@ export default function GoogleAuthCallbackScreen() {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
-        {!failed ? <ActivityIndicator size="large" color={theme.colors.primary} /> : null}
+        {!failed ? <ActivityIndicator size="large" color={theme.colors.signal} /> : null}
         <Text accessibilityRole="header" style={styles.title}>
           {failed ? "Login belum berhasil" : "Menghubungkan akun"}
         </Text>
@@ -78,7 +78,7 @@ export default function GoogleAuthCallbackScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 14 },
-  title: { color: theme.colors.text, fontSize: 21, fontWeight: "800", textAlign: "center" },
+  title: { color: theme.colors.ink, fontSize: 21, fontWeight: "800", textAlign: "center" },
   message: { color: theme.colors.muted, fontSize: 14, lineHeight: 21, textAlign: "center" },
-  link: { marginTop: 10, color: theme.colors.primary, fontSize: 15, fontWeight: "700" },
+  link: { marginTop: 10, color: theme.colors.signal, fontSize: 15, fontWeight: "700" },
 });

@@ -7,7 +7,15 @@ export async function getSessionToken(): Promise<string | null> {
   return SecureStore.getItemAsync(SESSION_KEY);
 }
 
-// [ADDED] Store a bearer session returned by the mobile OAuth exchange.\nexport async function persistSessionToken(token: string): Promise<void> {\n  if (!token || token.length < 20) throw new Error("Token sesi tidak valid.");\n  await SecureStore.setItemAsync(SESSION_KEY, token, {\n    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,\n  });\n}\n\n// [ADDED] Extract the HttpOnly session cookie returned by the existing backend login.
+// [ADDED] Simpan bearer token dari pertukaran kode OAuth Google mobile.
+export async function persistSessionToken(token: string): Promise<void> {
+  if (!token || token.length < 20) throw new Error("Token sesi tidak valid.");
+  await SecureStore.setItemAsync(SESSION_KEY, token, {
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+  });
+}
+
+// [ADDED] Extract the HttpOnly session cookie returned by the existing backend login.
 export async function persistSessionFromResponse(response: Response): Promise<void> {
   const setCookie = response.headers.get("set-cookie");
   if (!setCookie) {

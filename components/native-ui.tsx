@@ -7,8 +7,9 @@ import { theme } from "@/constants/theme";
 export const formatRupiah = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 export const formatDate = (value: Date | string) => new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
-export function AppScreen({ children, scroll = true, style }: { children: ReactNode; scroll?: boolean; style?: ViewStyle }) {
-  return <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+// [MODIFIED] Allow screens below a safe-area-aware app header to avoid a second top inset.
+export function AppScreen({ children, scroll = true, style, safeAreaTop = true }: { children: ReactNode; scroll?: boolean; style?: ViewStyle; safeAreaTop?: boolean }) {
+  return <SafeAreaView style={styles.safe} edges={safeAreaTop ? ["top", "left", "right"] : ["left", "right"]}>
     {scroll ? <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, style]}>{children}</ScrollView> : <View style={[styles.content, { flex: 1 }, style]}>{children}</View>}
   </SafeAreaView>;
 }
@@ -17,7 +18,7 @@ export function PageHeading({ title, subtitle, eyebrow, right }: { title: string
   return <View style={styles.heading}><View style={{ flex: 1, gap: 5 }}>{eyebrow ? <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text> : null}<Text style={styles.title}>{title}</Text>{subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}</View>{right}</View>;
 }
 
-export function Panel({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+export function Panel({ children, style }: { children: ReactNode; style?: ViewStyle | ViewStyle[] }) {
   return <View style={[styles.panel, style]}>{children}</View>;
 }
 

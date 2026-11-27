@@ -1,3 +1,10 @@
+// [MODIFIED] Product management adapted to HeyPost frontend's grouped list layout.
+import { useEffect, useMemo, useState } from "react";
+import { Alert, DeviceEventEmitter, Image, Modal, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { ActionButton, AppScreen, EmptyState, ErrorState, Field, LoadingState, PageHeading, Panel, Tag, formatRupiah } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+
 type Product = { id: number; categoryId: number; name: string; sku: string; price: number; stock: number; imageUrl: string | null; active: boolean };
 type ProductForm = { id?: number; name: string; categoryId: number; price: string; stock: string };
 const blank: ProductForm = { name: "", categoryId: 0, price: "", stock: "0" };

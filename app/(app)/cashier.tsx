@@ -1,3 +1,10 @@
+// [MODIFIED] POS mengikuti referensi HeyPost: katalog vertikal, keranjang di header, dan bottom sheet checkout.
+import { useEffect, useMemo, useState } from "react";
+import { Alert, DeviceEventEmitter, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActionButton, AppScreen, EmptyState, ErrorState, Field, LoadingState, PageHeading, Panel, Tag, formatRupiah } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+
 type Product = { id: number; categoryId: number; name: string; sku: string; price: number; stock: number; imageUrl: string | null; active: boolean };
 type Cart = Record<number, number>;
 type OrderType = "Makan di tempat" | "Bawa pulang" | "Pesan antar";

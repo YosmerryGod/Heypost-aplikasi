@@ -1,3 +1,10 @@
+// [MODIFIED] Sales dashboard follows HeyPost frontend's report hierarchy and green visual system.
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppScreen, EmptyState, ErrorState, LoadingState, PageHeading, Panel, formatRupiah } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+
 type Range = "today" | "week" | "month" | "all";
 const ranges: { value: Range; label: string }[] = [
   { value: "today", label: "Hari ini" },

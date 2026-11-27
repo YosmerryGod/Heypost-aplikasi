@@ -1,3 +1,11 @@
+// [MODIFIED] Settings hub follows the grouped HeyPost frontend navigation.
+import { router } from "expo-router";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { ActionButton, AppScreen, PageHeading, Panel, Tag } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+
 type SettingsRoute = "/products" | "/reports" | "/outlets" | "/employees" | "/expenses" | "/receipt" | "/printer";
 const groups: { title: string; items: { title: string; description: string; route: SettingsRoute; icon: keyof typeof Ionicons.glyphMap; roles: string[] }[] }[] = [
   { title: "TOKO", items: [

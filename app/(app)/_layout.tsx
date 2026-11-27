@@ -1,3 +1,12 @@
+// [MODIFIED] Native workspace navigation adapted from HeyPost frontend AppLayout.
+import { useEffect, useState } from "react";
+import { Alert, DeviceEventEmitter, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Tabs, router, usePathname } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+
 function AppHeader() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();

@@ -1,3 +1,11 @@
+// [MODIFIED] Daily ledger follows HeyPost frontend's sales, expense and balance summary layout.
+import { useEffect, useMemo, useState } from "react";
+import { Alert, DeviceEventEmitter, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { ActionButton, AppScreen, EmptyState, ErrorState, Field, LoadingState, PageHeading, Panel, Tag, formatDate, formatRupiah } from "@/components/native-ui";
+import { theme } from "@/constants/theme";
+import { trpc } from "@/providers/trpc";
+
 type Transaction = { id: number; invoiceNumber: string; customerName: string | null; createdAt: Date; orderType: string; paymentMethod: string; status: "Selesai" | "Dibatalkan"; subtotal: number; discount: number; total: number; cashReceived: number | null; items: { productId: number; productName: string; quantity: number; unitPrice: number; subtotal: number }[] };
 type Expense = { id: number; category: string; description: string | null; amount: number; paymentMethod: string; expenseDate: string; status: "Aktif" | "Dibatalkan"; createdAt: Date };
 type PaymentMethod = "Tunai" | "QRIS" | "Kartu";

@@ -1,16 +1,63 @@
 // [ADDED] Shared native design primitives adapted from HeyPost web tokens.
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
+import { Animated, DeviceEventEmitter, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 
 export const formatRupiah = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 export const formatDate = (value: Date | string) => new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
+// [ADDED] Kirim feedback singkat yang konsisten tanpa dialog native yang memblokir layar.
+export function showToast(title: string, message?: string, type: "success" | "error" | "info" = "success") {
+  DeviceEventEmitter.emit("heypost:toast", { title, message, type });
+}
+
+// [ADDED] Toast global untuk setiap halaman yang menggunakan AppScreen.
+function ToastHost() {
+  const [toast, setToast] = useState<{ title: string; message?: string; type: "success" | "error" | "info" } | null>(null);
+  const [visible, setVisible] = useState(false);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-12)).current;
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener("heypost:toast", (payload: { title: string; message?: string; type: "success" | "error" | "info" }) => {
+      if (timer.current) clearTimeout(timer.current);
+      setToast(payload);
+      setVisible(true);
+      opacity.setValue(0);
+      translateY.setValue(-12);
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.spring(translateY, { toValue: 0, damping: 18, stiffness: 180, useNativeDriver: true }),
+      ]).start();
+      timer.current = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: -8, duration: 180, useNativeDriver: true }),
+        ]).start(({ finished }) => { if (finished) { setVisible(false); setToast(null); } });
+      }, 3000);
+    });
+    return () => { subscription.remove(); if (timer.current) clearTimeout(timer.current); };
+  }, [opacity, translateY]);
+
+  if (!visible || !toast) return null;
+  const palette = toast.type === "success" ? { bg: "#FFFFFF", iconBg: "#E6F5EC", icon: "checkmark" as const, color: "#087653" } : toast.type === "error" ? { bg: "#FFFFFF", iconBg: "#FCEBEC", icon: "close" as const, color: "#B42318" } : { bg: "#FFFFFF", iconBg: "#EAF1FA", icon: "information" as const, color: "#315F91" };
+  return <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: "absolute", top: 10, left: 16, right: 16, zIndex: 1000, elevation: 20, opacity, transform: [{ translateY }], flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 13, borderRadius: 15, borderWidth: 1, borderColor: "#E3EAE5", backgroundColor: palette.bg, shadowColor: "#14271D", shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.13, shadowRadius: 14 }}>
+    <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: palette.iconBg, alignItems: "center", justifyContent: "center" }}><Ionicons name={palette.icon} size={20} color={palette.color} /></View>
+    <View style={{ flex: 1, gap: 2 }}><Text numberOfLines={1} style={{ color: "#17241D", fontSize: 14, fontWeight: "800" }}>{toast.title}</Text>{toast.message ? <Text numberOfLines={2} style={{ color: "#68756D", fontSize: 12, lineHeight: 17 }}>{toast.message}</Text> : null}</View>
+    <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: palette.color, opacity: 0.75 }} />
+  </Animated.View>;
+}
+
 // [MODIFIED] Allow screens below a safe-area-aware app header to avoid a second top inset.
 export function AppScreen({ children, scroll = true, style, safeAreaTop = true }: { children: ReactNode; scroll?: boolean; style?: ViewStyle; safeAreaTop?: boolean }) {
   return <SafeAreaView style={styles.safe} edges={safeAreaTop ? ["top", "left", "right"] : ["left", "right"]}>
     {scroll ? <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, style]}>{children}</ScrollView> : <View style={[styles.content, { flex: 1 }, style]}>{children}</View>}
+    <ToastHost />
   </SafeAreaView>;
 }
 
@@ -22,8 +69,26 @@ export function Panel({ children, style }: { children: ReactNode; style?: ViewSt
   return <View style={[styles.panel, style]}>{children}</View>;
 }
 
+// [ADDED] Indikator kotak animasi dipakai bersama untuk seluruh state loading native.
+function SquareLoadingIndicator({ size = 12, color = theme.colors.signal }: { size?: number; color?: string }) {
+  const values = useRef([new Animated.Value(0.35), new Animated.Value(0.35), new Animated.Value(0.35), new Animated.Value(0.35)]).current;
+  useEffect(() => {
+    const animations = values.map((value, index) => Animated.loop(Animated.sequence([
+      Animated.delay(index * 80),
+      Animated.timing(value, { toValue: 1, duration: 240, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+      Animated.timing(value, { toValue: 0.35, duration: 240, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+      Animated.delay((3 - index) * 80),
+    ])));
+    animations.forEach((animation) => animation.start());
+    return () => animations.forEach((animation) => animation.stop());
+  }, [values]);
+  return <View style={{ width: size * 2 + 4, height: size * 2 + 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }} accessibilityRole="progressbar" accessibilityLabel="Memuat">
+    {values.map((value, index) => <Animated.View key={index} style={{ width: size, height: size, borderRadius: 2, backgroundColor: color, opacity: value, transform: [{ scale: value }] }} />)}
+  </View>;
+}
+
 export function ActionButton({ title, onPress, disabled, loading, secondary, danger, compact }: { title: string; onPress: () => void; disabled?: boolean; loading?: boolean; secondary?: boolean; danger?: boolean; compact?: boolean }) {
-  return <Pressable accessibilityRole="button" disabled={disabled || loading} onPress={onPress} style={({ pressed }) => [styles.button, compact && styles.buttonCompact, secondary && styles.buttonSecondary, danger && styles.buttonDanger, (disabled || loading) && styles.buttonDisabled, pressed && styles.pressed]}>{loading ? <ActivityIndicator color={secondary ? theme.colors.signal : "#fff"} /> : <Text style={[styles.buttonText, secondary && styles.buttonSecondaryText, danger && styles.buttonDangerText]}>{title}</Text>}</Pressable>;
+  return <Pressable accessibilityRole="button" disabled={disabled || loading} onPress={onPress} style={({ pressed }) => [styles.button, compact && styles.buttonCompact, secondary && styles.buttonSecondary, danger && styles.buttonDanger, (disabled || loading) && styles.buttonDisabled, pressed && styles.pressed]}>{loading ? <SquareLoadingIndicator size={8} color={secondary || danger ? theme.colors.signal : "#fff"} /> : <Text style={[styles.buttonText, secondary && styles.buttonSecondaryText, danger && styles.buttonDangerText]}>{title}</Text>}</Pressable>;
 }
 
 export function Field({ label, value, onChangeText, placeholder, keyboardType, secureTextEntry, multiline, editable = true, ...props }: TextInputProps & { label: string; value: string; onChangeText: (value: string) => void }) {
@@ -40,7 +105,7 @@ export function EmptyState({ title, description, action }: { title: string; desc
 }
 
 export function LoadingState() {
-  return <View style={styles.empty}><ActivityIndicator color={theme.colors.signal} size="large" /><Text style={styles.subtitle}>Memuat data...</Text></View>;
+  return <View style={styles.empty}><SquareLoadingIndicator size={15} /><Text style={styles.subtitle}>Memuat data...</Text></View>;
 }
 
 export function ErrorState({ message, retry }: { message: string; retry: () => void }) {

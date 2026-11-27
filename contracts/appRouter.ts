@@ -14,7 +14,7 @@ const permission = z.enum(["pos.access", "history.daily.view", "invoice.edit", "
 const store = z.object({ id: z.number(), name: z.string(), logoUrl: z.string().nullable(), createdAt: z.date(), updatedAt: z.date() });
 const outlet = z.object({
   id: z.number(), storeId: z.number(), name: z.string(), address: z.string().nullable(),
-  whatsappNumber: z.string().nullable(), active: z.boolean(), createdAt: z.date(), updatedAt: z.date(),
+  whatsappNumber: z.string().nullable(), whatsappUseMain: z.boolean(), openingTime: z.string(), closingTime: z.string(), timezone: z.string(), active: z.boolean(), createdAt: z.date(), updatedAt: z.date(),
 });
 const receiptSettings = z.object({
   id: z.number(), storeId: z.number(), showLogo: z.boolean(), showStoreName: z.boolean(),
@@ -40,7 +40,7 @@ const productInput = z.object({
   name: z.string(), categoryId: z.number(), price: z.number(), stock: z.number(), imageUrl: z.string().nullable(),
 });
 const orderType = z.enum(["Makan di tempat", "Bawa pulang", "Pesan antar"]);
-const paymentMethod = z.enum(["Tunai", "QRIS", "Kartu"]);
+const paymentMethod = z.enum(["Tunai", "QRIS", "Kartu", "Transfer"]);
 const saleItem = z.object({ productName: z.string(), unitPrice: z.number(), quantity: z.number(), subtotal: z.number() });
 const transaction = z.object({
   id: z.number(), invoiceNumber: z.string(), customerName: z.string().nullable(),
@@ -90,12 +90,18 @@ export const appRouter = t.router({
     })).output(receiptSettings).mutation(typeOnly),
     createOutlet: procedure.input(z.object({
       name: z.string(), address: z.string().optional(), whatsappNumber: z.string().nullable().optional(),
+      whatsappUseMain: z.boolean().optional(), openingTime: z.string().optional(), closingTime: z.string().optional(), timezone: z.enum(["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"]).optional(),
       copyMenuFromOutletId: z.number().optional(),
     })).output(outlet).mutation(typeOnly),
+    // [ADDED] Sinkronisasi mengganti katalog outlet tujuan dengan salinan outlet sumber.
+    syncOutletMenu: procedure.input(z.object({ targetOutletId: z.number(), sourceOutletId: z.number() })).output(z.object({
+      ok: z.boolean(), copiedCategories: z.number(), copiedProducts: z.number(),
+    })).mutation(typeOnly),
     switchOutlet: procedure.input(z.object({ outletId: z.number() })).output(z.object({ ok: z.boolean(), activeOutletId: z.number() })).mutation(typeOnly),
     updateOutlet: procedure.input(z.object({
       id: z.number(), name: z.string().optional(), address: z.string().nullable().optional(),
-      whatsappNumber: z.string().nullable().optional(), active: z.boolean().optional(),
+      whatsappNumber: z.string().nullable().optional(), whatsappUseMain: z.boolean().optional(),
+      openingTime: z.string().optional(), closingTime: z.string().optional(), timezone: z.enum(["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"]).optional(), active: z.boolean().optional(),
     })).output(z.object({ ok: z.boolean() })).mutation(typeOnly),
   }),
   employees: t.router({

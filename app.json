@@ -14,6 +14,13 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "Izinkan HeyPost menggunakan Face ID untuk melindungi sesi akun."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Izinkan HeyPost mengakses kamera untuk memindai barcode karyawan.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as Linking from "expo-linking"; // [ADDED]
 import { router } from "expo-router";
 import {
   KeyboardAvoidingView,
@@ -23,6 +24,7 @@ export default function LoginScreen() {
   const [barcode, setBarcode] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false); // [ADDED]
   const { width } = useWindowDimensions();
 
   const utils = trpc.useUtils();
@@ -50,6 +52,27 @@ export default function LoginScreen() {
     setError("");
     ownerLogin.reset();
     employeeLogin.reset();
+  }
+
+  // [ADDED] Start the backend-managed Google OAuth flow and return through the heypost:// deep link.
+  async function handleGoogleLogin() {
+    if (googleLoading) return;
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? "https://apihey.doodweb.tech"}/api/auth/google/mobile/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const payload = await response.json() as { authorizationUrl?: string; error?: string };
+      if (!response.ok || !payload.authorizationUrl) {
+        throw new Error(payload.error || "Tidak dapat memulai login Google.");
+      }
+      await Linking.openURL(payload.authorizationUrl);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Tidak dapat membuka login Google.");
+      setGoogleLoading(false);
+    }
   }
 
   function handleContinue() {
@@ -254,6 +277,16 @@ export default function LoginScreen() {
               {/* [ADDED] Alternatif login karyawan ditempatkan di bawah tombol utama seperti referensi. */}
               {!employeeMode ? (
                 <>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Masuk dengan Google"
+                    disabled={googleLoading}
+                    onPress={handleGoogleLogin}
+                    style={({ pressed }) => [styles.googleButton, pressed && styles.pressed, googleLoading && styles.disabledButton]}
+                  >
+                    <Text style={styles.googleMark}>G</Text>
+                    <Text style={styles.googleButtonText}>{googleLoading ? "Menghubungkan ke Google..." : "Lanjutkan dengan Google"}</Text>
+                  </Pressable>
                   <View style={styles.separator}>
                     <View style={styles.separatorLine} />
                     <Text style={styles.separatorText}>ATAU</Text>
@@ -578,7 +611,7 @@ const styles = StyleSheet.create({
   primaryArrow: { color: "#ffffff", fontSize: 30, lineHeight: 34, marginTop: -3 },
   disabledButton: { opacity: 0.52 },
   pressed: { opacity: 0.82 },
-  separator: {
+  // [ADDED] Google sign-in button uses the same visual weight as the other secondary action.\n  googleButton: {\n    minHeight: 62,\n    flexDirection: "row",\n    alignItems: "center",\n    justifyContent: "center",\n    gap: 12,\n    borderWidth: 1,\n    borderColor: "#dce5df",\n    borderRadius: 18,\n    backgroundColor: "#ffffff",\n  },\n  googleMark: { color: "#4285F4", fontSize: 21, fontWeight: "800" },\n  googleButtonText: { color: "#24352c", fontSize: 15, fontWeight: "800" },\n  separator: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,

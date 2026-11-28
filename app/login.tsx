@@ -1,16 +1,24 @@
-import { useState } from "react";
+import { AuthButton, AuthInput, showToast } from "@/components/native-ui"; // [MODIFIED] Komponen autentikasi bersama.
+import { useMemo, useState } from "react";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path, Rect, Circle, Text as SvgText } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import { CameraView, scanFromURLAsync, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { Screen } from "@/components/Screen";
-import { theme } from "@/constants/theme";
+import { getTheme, type ThemeColors } from "@/constants/theme";
 import { trpc } from "@/providers/trpc";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+
+const authTheme = getTheme(true);
 
 export default function LoginScreen() {
+  // [MODIFIED] Login dan scanner selalu Dark tanpa mengubah Appearance global.
+  const cameraColors = useMemo(() => authTheme.colors, []);
+  const cameraStyles = useMemo(() => createCameraStyles(cameraColors), [cameraColors]);
   const [identity, setIdentity] = useState("");
   const [secret, setSecret] = useState("");
   const [showSecret, setShowSecret] = useState(false);
@@ -45,7 +53,7 @@ export default function LoginScreen() {
     setError(""); setScanned(false);
     if (!permission?.granted) {
       const result = await requestPermission();
-      if (!result.granted) { Alert.alert("Izin kamera diperlukan", "Izinkan HeyPost menggunakan kamera untuk memindai barcode karyawan."); return; }
+      if (!result.granted) { showToast("Izin kamera diperlukan", "Izinkan HeyPost menggunakan kamera untuk memindai barcode karyawan.", "error"); return; }
     }
     setCameraOpen(true);
   }
@@ -62,7 +70,7 @@ export default function LoginScreen() {
       const barcodes = await scanFromURLAsync(result.assets[0].uri, ["qr","code128","code39","code93","codabar","ean13","ean8","upc_a","upc_e","itf14","pdf417","aztec","datamatrix"]);
       const barcode = barcodes.find(item => item.data?.trim());
       if (!barcode) {
-        Alert.alert("Barcode tidak ditemukan", "Pilih gambar yang menampilkan barcode karyawan dengan jelas.");
+        showToast("Barcode tidak ditemukan", "Pilih gambar yang menampilkan barcode karyawan dengan jelas.", "error");
         return;
       }
       setIdentity(barcode.data.trim());
@@ -71,7 +79,7 @@ export default function LoginScreen() {
       setScanned(true);
       setCameraOpen(false);
     } catch (cause) {
-      Alert.alert("Gagal membaca gambar", cause instanceof Error ? cause.message : "Coba pilih gambar lain.");
+      showToast("Gagal membaca gambar", cause instanceof Error ? cause.message : "Coba pilih gambar lain.", "error");
     }
   }
 
@@ -87,47 +95,64 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen scroll={false} fullBleed>
-      <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={[styles.content,{paddingHorizontal:width<380?22:28},compact&&styles.compactContent]}>
+    <Screen scroll={false} fullBleed forceDark>
+      <StatusBar style="light" />
+      {/* [MODIFIED] Keyboard menggeser viewport dan ScrollView membawa input aktif ke area terlihat. */}
+      <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <ScrollView
+          style={styles.loginScroll}
+          contentContainerStyle={[styles.content,{paddingHorizontal:width<380?22:28},compact&&styles.compactContent]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+          showsVerticalScrollIndicator={false}
+        >
           <View pointerEvents="none" style={styles.backgroundDecor}><View style={styles.backgroundGlowTop}/><View style={styles.backgroundGlowBottom}/><View style={styles.backgroundRing}/></View>
+          {/* [MODIFIED] Menggunakan logo resmi terbaru dari paket HeyPost. */}
           <View style={styles.logoWrap}>
-            <Svg width={112} height={112} viewBox="0 0 512 512">
-              <Rect x="0" y="0" width="512" height="512" rx="112" fill="#000000" />
-              <SvgText x="256" y="244" textAnchor="middle" fontSize="146" fontWeight="900" letterSpacing="-8" fill="#C8FF00">HEY</SvgText>
-              <SvgText x="150" y="390" textAnchor="middle" fontSize="142" fontWeight="900" fontStyle="italic" fill="#C8FF00">P</SvgText>
-              <Circle cx="256" cy="337" r="61" fill="#C8FF00" />
-              <SvgText x="256" y="359" textAnchor="middle" fontSize="67" fontWeight="900" fontStyle="italic" fill="#000000">Rp</SvgText>
-              <SvgText x="375" y="390" textAnchor="middle" fontSize="142" fontWeight="900" fontStyle="italic" fill="#C8FF00">ST</SvgText>
-            </Svg>
+            <Image source={require("@/assets/heypost-logo.png")} style={styles.logoImage} resizeMode="contain" />
           </View>
           <View style={[styles.heading,compact&&styles.compactHeading]}>
             <Text style={[styles.title,compact&&styles.compactTitle]}>Selamat datang</Text>
             <Text style={[styles.subtitle,compact&&styles.compactSubtitle]}>Masuk untuk mengelola bisnis Anda dengan lebih mudah.</Text>
           </View>
           <View style={styles.form}>
+            <AuthInput
+              label="Email atau barcode"
+              value={identity}
+              onChangeText={value=>{setIdentity(value);setError("");}}
+              placeholder="Email atau kode barcode"
+              leftIcon={isEmployee ? "barcode-outline" : "mail-outline"}
+              rightIcon="camera-outline"
+              onRightPress={openScanner}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              containerStyle={compact ? [styles.inputShell, styles.compactInputShell] : styles.inputShell}
+              inputStyle={styles.inputText}
+            />
             <View style={styles.field}>
-              <Text style={styles.label}>Email atau barcode</Text>
-              <View style={[styles.inputShell,compact&&styles.compactInputShell]}>
-                <Ionicons name={isEmployee?"barcode-outline":"mail-outline"} size={21} color="#68727D" style={styles.fieldIcon}/>
-                <TextInput accessibilityLabel="Email atau barcode" autoCapitalize="none" autoCorrect={false} autoComplete="off" keyboardType="email-address" onChangeText={value=>{setIdentity(value);setError("");}} placeholder="Email atau kode barcode" placeholderTextColor="#858D97" returnKeyType="next" style={styles.inputText} value={identity}/>
-                <Pressable accessibilityRole="button" accessibilityLabel="Scan barcode dengan kamera" onPress={openScanner} style={styles.passwordToggle}><Ionicons name="camera-outline" size={24} color="#087746"/></Pressable>
-              </View>
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>{isEmployee?"PIN 6 digit":"Password atau PIN"}</Text>
-              <View style={[styles.inputShell,compact&&styles.compactInputShell]}>
-                <Ionicons name="lock-closed-outline" size={21} color="#68727D" style={styles.fieldIcon}/>
-                <TextInput accessibilityLabel={isEmployee?"PIN karyawan":"Password atau PIN"} autoCapitalize="none" keyboardType={isEmployee?"number-pad":"default"} maxLength={isEmployee?6:undefined} onChangeText={value=>{setSecret(isEmployee?value.replace(/\D/g,"").slice(0,6):value);setError("");}} placeholder={isEmployee?"Masukkan PIN 6 digit":"Masukkan password atau PIN"} placeholderTextColor="#858D97" secureTextEntry={!showSecret} style={styles.inputText} value={secret}/>
-                <Pressable accessibilityRole="button" accessibilityLabel={showSecret?"Sembunyikan password":"Tampilkan password"} hitSlop={10} onPress={()=>setShowSecret(value=>!value)} style={styles.passwordToggle}><Ionicons name={showSecret?"eye-off-outline":"eye-outline"} size={21} color="#68727D"/></Pressable>
-              </View>
-              {!isEmployee?<Pressable accessibilityRole="button" onPress={()=>Alert.alert("Lupa password?","Fitur reset password belum tersedia.")} style={styles.forgotPassword}><Text style={styles.forgotPasswordText}>Lupa password?</Text></Pressable>:null}
+              <AuthInput
+                label={isEmployee ? "PIN 6 digit" : "Password atau PIN"}
+                value={secret}
+                onChangeText={value=>{setSecret(isEmployee?value.replace(/\D/g,"").slice(0,6):value);setError("");}}
+                placeholder={isEmployee ? "Masukkan PIN 6 digit" : "Masukkan password atau PIN"}
+                leftIcon="lock-closed-outline"
+                rightIcon={showSecret ? "eye-off-outline" : "eye-outline"}
+                onRightPress={() => setShowSecret(value=>!value)}
+                secureTextEntry={!showSecret} // [MODIFIED] Visibilitas PIN karyawan juga mengikuti tombol mata.
+                keyboardType={isEmployee ? "number-pad" : "default"}
+                maxLength={isEmployee ? 6 : undefined}
+                autoCapitalize="none"
+                containerStyle={compact ? [styles.inputShell, styles.compactInputShell] : styles.inputShell}
+                inputStyle={styles.inputText}
+              />
+              {!isEmployee?<Pressable accessibilityRole="button" onPress={()=>showToast("Lupa password?", "Fitur reset password belum tersedia.", "error")} style={styles.forgotPassword}><Text style={styles.forgotPasswordText}>Lupa password?</Text></Pressable>:null}
             </View>
           </View>
           {error?<Text accessibilityRole="alert" style={styles.error}>{error}</Text>:null}
-          <Pressable accessibilityRole="button" disabled={!canSubmit||loading} onPress={handleContinue} style={({pressed})=>[styles.primaryButton,compact&&styles.compactPrimaryButton,(!canSubmit||loading)&&styles.disabledButton,pressed&&styles.pressed]}>
-            <Text style={styles.primaryButtonText}>{loading?"Memproses...":"Masuk"}</Text><Text style={styles.primaryArrow}>→</Text>
-          </Pressable>
+          {/* [MODIFIED] Tombol masuk memakai komponen autentikasi global. */}
+          <AuthButton title="Masuk" onPress={handleContinue} disabled={!canSubmit} loading={loading} style={compact ? { ...styles.primaryButton, ...styles.compactPrimaryButton } : styles.primaryButton} trailing={<Text style={styles.primaryArrow}>→</Text>} />
           <View style={styles.separator}><View style={styles.separatorLine}/><Text style={styles.separatorText}>atau</Text><View style={styles.separatorLine}/></View>
           <Pressable accessibilityRole="button" disabled={googleLoading} onPress={handleGoogleLogin} style={({pressed})=>[styles.googleButton,pressed&&styles.pressed,googleLoading&&styles.disabledButton]}>
             <Svg width={25} height={25} viewBox="0 0 24 24" style={styles.googleMark}>
@@ -141,22 +166,25 @@ export default function LoginScreen() {
           <Pressable accessibilityRole="button" onPress={()=>router.push("/register")} style={styles.registerLinkButton}>
             <Text style={styles.registerText}>Belum punya akun? </Text><Text style={styles.registerLink}>Daftar sekarang</Text>
           </Pressable>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
       <Modal visible={cameraOpen} animationType="slide" onRequestClose={()=>setCameraOpen(false)}>
-        <View style={styles.cameraModal}>
-          <View style={styles.cameraHeader}>
-            <Text style={styles.cameraTitle}>Scan barcode karyawan</Text>
-            <View style={styles.cameraHeaderActions}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Pilih barcode dari galeri" onPress={pickBarcodeFromGallery} style={styles.galleryButton}>
-                <Ionicons name="images-outline" size={19} color="#FFFFFF" />
-                <Text style={styles.galleryButtonText}>Galeri</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Tutup kamera" onPress={()=>setCameraOpen(false)} style={styles.cameraClose}><Ionicons name="close" size={27} color="#FFFFFF"/></Pressable>
+        <View style={cameraStyles.cameraModal}>
+          {/* [MODIFIED] Safe area menjaga header tidak tertutup status bar Android. */}
+          <SafeAreaView edges={["top"]} style={cameraStyles.cameraHeaderSafe}>
+            <View style={cameraStyles.cameraHeader}>
+              <Text style={cameraStyles.cameraTitle}>Scan barcode karyawan</Text>
+              <View style={cameraStyles.cameraHeaderActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Pilih barcode dari galeri" onPress={pickBarcodeFromGallery} style={({pressed})=>[cameraStyles.galleryButton,pressed&&styles.pressed]}>
+                  <Ionicons name="images-outline" size={19} color="#FFFFFF" />
+                  <Text style={cameraStyles.galleryButtonText}>Galeri</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Tutup kamera" onPress={()=>setCameraOpen(false)} style={cameraStyles.cameraClose}><Ionicons name="close" size={27} color={cameraColors.ink}/></Pressable>
+              </View>
             </View>
-          </View>
+          </SafeAreaView>
           <CameraView style={{flex:1}} facing="back" barcodeScannerSettings={{barcodeTypes:["qr","code128","code39","code93","codabar","ean13","ean8","upc_a","upc_e","itf14","pdf417","aztec","datamatrix"]}} onBarcodeScanned={scanned?undefined:({data})=>{setScanned(true);setIdentity(data.trim());setSecret("");setError("");setCameraOpen(false);}}>
-            <View style={styles.cameraBody}><View style={{width:260,height:150,borderWidth:2,borderColor:"#FFFFFF",borderRadius:14,backgroundColor:"transparent"}}/><Text style={styles.cameraHint}>Arahkan kamera ke barcode karyawan. Kode akan terisi otomatis.</Text></View>
+            <View style={cameraStyles.cameraBody}><View style={cameraStyles.scanFrame}/><Text style={cameraStyles.cameraHint}>Arahkan kamera ke barcode karyawan. Kode akan terisi otomatis.</Text></View>
           </CameraView>
         </View>
       </Modal>
@@ -165,14 +193,16 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  keyboard: { flex: 1, backgroundColor: "#FFFFFF" },
-  // [MODIFIED] Konten dikunci dalam tinggi layar tanpa ScrollView.
+  keyboard: { flex: 1, backgroundColor: authTheme.colors.surface },
+  loginScroll: { flex: 1 },
+  // [MODIFIED] Konten memenuhi layar saat keyboard tertutup dan dapat bergulir saat keyboard terbuka.
   content: {
-    flex: 1,
+    flexGrow: 1,
+    minHeight: "100%",
     justifyContent: "center",
     paddingTop: 10,
     paddingBottom: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: authTheme.colors.surface,
     overflow: "hidden",
   },
   // [ADDED] Bentuk dekoratif abstrak bernuansa hijau, ditempatkan di belakang konten.
@@ -187,7 +217,7 @@ const styles = StyleSheet.create({
     borderRadius: 135,
     top: -155,
     right: -115,
-    backgroundColor: "#EAF7F0",
+    backgroundColor: authTheme.colors.signalSoft,
   },
   backgroundGlowBottom: {
     position: "absolute",
@@ -196,7 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: 118,
     bottom: -155,
     left: -115,
-    backgroundColor: "#F0F9F4",
+    backgroundColor: authTheme.colors.signalSoft,
   },
   backgroundRing: {
     position: "absolute",
@@ -206,16 +236,18 @@ const styles = StyleSheet.create({
     top: 42,
     right: -78,
     borderWidth: 18,
-    borderColor: "#F4FAF6",
+    borderColor: authTheme.colors.signalSoft,
   },
   compactContent: { paddingTop: 6, paddingBottom: 6 },
   veryCompactContent: { paddingTop: 2, paddingBottom: 2 },
   logoWrap: { alignItems: "center", marginBottom: 15 },
+  // [ADDED] Ukuran logo dijaga proporsional seperti area logo sebelumnya.
+  logoImage: { width: 112, height: 112 },
   registerLinkButton: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 15, paddingVertical: 8 },
   heading: { marginBottom: 24 },
   compactHeading: { marginBottom: 17 },
   title: {
-    color: "#092D25",
+    color: authTheme.colors.ink,
     // [MODIFIED] Ukuran judul login lebih seimbang pada layar kecil.
     fontSize: 29,
     lineHeight: 35,
@@ -226,14 +258,14 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 340,
     marginTop: 8,
-    color: "#5B6067",
+    color: "#FFFFFF",
     fontSize: 16,
     lineHeight: 23,
   },
   compactSubtitle: { fontSize: 14, lineHeight: 20, marginTop: 6 },
   form: { gap: 15 },
   field: { gap: 7 },
-  label: { color: "#102C25", fontSize: 15, fontWeight: "700" },
+  label: { color: authTheme.colors.ink, fontSize: 15, fontWeight: "700" },
   inputShell: {
     minHeight: 50,
     flexDirection: "row",
@@ -242,7 +274,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#D1D6DC",
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: authTheme.colors.surface,
   },
   compactInputShell: { minHeight: 50, borderRadius: 14 },
   fieldIcon: { width: 34 },
@@ -250,7 +282,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 50,
     padding: 0,
-    color: "#172D26",
+    color: "#FFFFFF",
     fontSize: 16,
   },
   passwordToggle: {
@@ -260,7 +292,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   forgotPassword: { alignSelf: "flex-end", marginTop: 5, paddingVertical: 2 },
-  forgotPasswordText: { color: "#087746", fontSize: 14, fontWeight: "600" },
+  forgotPasswordText: { color: "#F5B900", fontSize: 14, fontWeight: "600" },
   primaryButton: {
     minHeight: 50,
     flexDirection: "row",
@@ -270,7 +302,7 @@ const styles = StyleSheet.create({
     marginTop: 19,
     paddingHorizontal: 18,
     borderRadius: 16,
-    backgroundColor: "#078451",
+    backgroundColor: "#F5B900",
   },
   compactPrimaryButton: { minHeight: 50, marginTop: 13 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
@@ -285,7 +317,7 @@ const styles = StyleSheet.create({
     marginBottom: 13,
   },
   separatorLine: { flex: 1, height: 1, backgroundColor: "#DDE1E5" },
-  separatorText: { color: "#747B84", fontSize: 14 },
+  separatorText: { color: "#FFFFFF", fontSize: 14 },
   googleButton: {
     minHeight: 48,
     flexDirection: "row",
@@ -295,10 +327,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#D1D6DC",
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: authTheme.colors.surface,
   },
   googleMark: { width: 27 },
-  googleButtonText: { color: "#10251F", fontSize: 15, fontWeight: "700" },
+  googleButtonText: { color: authTheme.colors.ink, fontSize: 15, fontWeight: "700" },
   employeeButton: {
     minHeight: 48,
     flexDirection: "row",
@@ -307,9 +339,9 @@ const styles = StyleSheet.create({
     gap: 15,
     marginTop: 13,
     borderRadius: 16,
-    backgroundColor: "#E4F8EF",
+    backgroundColor: authTheme.colors.signalSoft,
   },
-  employeeButtonText: { color: "#087746", fontSize: 15, fontWeight: "800" },
+  employeeButtonText: { color: "#F5B900", fontSize: 15, fontWeight: "800" },
   registerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -318,26 +350,72 @@ const styles = StyleSheet.create({
     gap: 7,
     marginTop: 18,
   },
-  registerText: { color: "#60666E", fontSize: 14 },
-  registerLink: { color: "#087746", fontSize: 15, fontWeight: "800" },
+  registerText: { color: "#FFFFFF", fontSize: 14 },
+  registerLink: { color: "#F5B900", fontSize: 15, fontWeight: "800" },
   backButton: { alignItems: "center", paddingVertical: 16 },
-  backButtonText: { color: "#087746", fontSize: 14, fontWeight: "700" },
+  backButtonText: { color: "#F5B900", fontSize: 14, fontWeight: "700" },
   cameraModal: { flex: 1, backgroundColor: "#000000" },
-  cameraHeader: { height: 64, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#10251F" },
-  cameraTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "700", flex: 1 },
+  cameraHeader: { height: 64, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: authTheme.colors.ink },
+  cameraTitle: { color: authTheme.colors.surface, fontSize: 16, fontWeight: "700", flex: 1 },
   cameraHeaderActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   galleryButton: { minHeight: 40, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 10, backgroundColor: "#24483E" },
-  galleryButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  galleryButtonText: { color: authTheme.colors.surface, fontSize: 13, fontWeight: "700" },
   cameraClose: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
   cameraBody: { flex: 1, justifyContent: "center", alignItems: "center" },
-  cameraHint: { color: "#FFFFFF", fontSize: 14, textAlign: "center", marginTop: 22, paddingHorizontal: 28 },
+  cameraHint: { color: authTheme.colors.surface, fontSize: 14, textAlign: "center", marginTop: 22, paddingHorizontal: 28 },
   error: {
     marginTop: 10,
     padding: 10,
     borderRadius: 10,
     backgroundColor: "#FEF3F2",
-    color: theme.colors.danger,
+    color: authTheme.colors.danger,
     fontSize: 12,
     lineHeight: 17,
+  },
+});
+
+
+// [ADDED] Tema scanner mengikuti token global HeyPost untuk mode terang dan gelap.
+const createCameraStyles = (colors: ThemeColors) => StyleSheet.create({
+  cameraModal: { flex: 1, backgroundColor: colors.ground },
+  cameraHeaderSafe: { backgroundColor: colors.surface },
+  cameraHeader: {
+    minHeight: 68,
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.surface,
+  },
+  cameraTitle: { color: colors.ink, fontSize: 17, fontWeight: "800", flex: 1, paddingRight: 10 },
+  cameraHeaderActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  galleryButton: {
+    minHeight: 42,
+    minWidth: 94,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    borderRadius: 12,
+    backgroundColor: colors.signal,
+  },
+  galleryButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  cameraClose: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
+  cameraBody: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 },
+  scanFrame: { width: 260, height: 150, borderWidth: 2, borderColor: "#FFFFFF", borderRadius: 14, backgroundColor: "transparent" },
+  cameraHint: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    marginTop: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.48)",
   },
 });

@@ -16,12 +16,13 @@ import {
   Text,
   TextInput,
   View,
+  useColorScheme,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActionButton, EmptyState, LoadingState, formatRupiah } from "@/components/native-ui";
-import { theme } from "@/constants/theme";
+import { ActionButton, EmptyState, LoadingState, formatRupiah, showToast } from "@/components/native-ui";
+import { getTheme, type ThemeColors } from "@/constants/theme";
 import { trpc } from "@/providers/trpc";
 import * as ImagePicker from "expo-image-picker";
 
@@ -58,6 +59,9 @@ const INITIAL_FORM: ProductForm = {
 };
 
 export default function ProductsScreen() {
+  const colorScheme = useColorScheme();
+  const colors = useMemo(() => getTheme(colorScheme === "dark").colors, [colorScheme]);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   // [ADDED] Penanda mount halaman Produk untuk diagnosis navigasi dari Profil.
   useEffect(() => {
     console.log(`[NAV_DEBUG] ${new Date().toISOString()} PRODUCTS_SCREEN_MOUNT`);
@@ -116,14 +120,14 @@ export default function ProductsScreen() {
 
   const toggleProduct = trpc.pos.setProductActive.useMutation({
     onSuccess: refreshProducts,
-    onError: (error) => Alert.alert("Gagal mengubah status", error.message),
+    onError: (error) => showToast("Gagal mengubah status", error.message, "error"),
   });
 
   // [ADDED] Pembuatan kategori menggunakan prosedur backend yang sudah tersedia.
   // [ADDED] Upload foto produk ke endpoint penyimpanan backend.
   const uploadProductImage = trpc.pos.uploadProductImage.useMutation({
     onSuccess: (result) => setProductImageUrl(result.imageUrl),
-    onError: (error) => Alert.alert("Upload foto gagal", error.message),
+    onError: (error) => showToast("Upload foto gagal", error.message, "error"),
   });
 
   const createCategory = trpc.pos.createCategory.useMutation({
@@ -131,9 +135,9 @@ export default function ProductsScreen() {
       await refreshProducts();
       setCategoryFormVisible(false);
       setCategoryName("");
-      Alert.alert("Berhasil", "Kategori berhasil ditambahkan.");
+      showToast("Berhasil", "Kategori berhasil ditambahkan.", "success");
     },
-    onError: (error) => Alert.alert("Gagal menambahkan kategori", error.message),
+    onError: (error) => showToast("Gagal menambahkan kategori", error.message, "error"),
   });
 
   const createProduct = trpc.pos.createProduct.useMutation({
@@ -141,9 +145,9 @@ export default function ProductsScreen() {
       await refreshProducts();
       setFormVisible(false);
       setForm(INITIAL_FORM);
-      Alert.alert("Berhasil", "Produk berhasil ditambahkan.");
+      showToast("Berhasil", "Produk berhasil ditambahkan.", "success");
     },
-    onError: (error) => Alert.alert("Gagal menambahkan produk", error.message),
+    onError: (error) => showToast("Gagal menambahkan produk", error.message, "error"),
   });
 
   const updateProduct = trpc.pos.updateProduct.useMutation({
@@ -151,9 +155,9 @@ export default function ProductsScreen() {
       await refreshProducts();
       setFormVisible(false);
       setForm(INITIAL_FORM);
-      Alert.alert("Berhasil", "Perubahan produk berhasil disimpan.");
+      showToast("Berhasil", "Perubahan produk berhasil disimpan.", "success");
     },
-    onError: (error) => Alert.alert("Gagal memperbarui produk", error.message),
+    onError: (error) => showToast("Gagal memperbarui produk", error.message, "error"),
   });
 
   const openCreateForm = () => {
@@ -171,7 +175,7 @@ export default function ProductsScreen() {
   const submitCategory = () => {
     const name = categoryName.trim();
     if (name.length < 2) {
-      Alert.alert("Nama kategori belum valid", "Nama kategori minimal 2 karakter.");
+      showToast("Nama kategori belum valid", "Nama kategori minimal 2 karakter.", "error");
       return;
     }
     createCategory.mutate({ name, sortOrder: categories.length });
@@ -202,7 +206,7 @@ export default function ProductsScreen() {
   const chooseProductImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Izin galeri diperlukan", "Izinkan HeyPost mengakses galeri untuk memilih foto menu.");
+      showToast("Izin galeri diperlukan", "Izinkan HeyPost mengakses galeri untuk memilih foto menu.", "error");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -216,15 +220,15 @@ export default function ProductsScreen() {
     const asset = result.assets[0];
     const mime = asset.mimeType ?? "image/jpeg";
     if (!["image/jpeg", "image/png", "image/webp"].includes(mime)) {
-      Alert.alert("Format tidak didukung", "Gunakan JPG, PNG, atau WebP.");
+      showToast("Format tidak didukung", "Gunakan JPG, PNG, atau WebP.", "error");
       return;
     }
     if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      Alert.alert("Ukuran foto terlalu besar", "Pilih foto dengan ukuran maksimal 5 MB.");
+      showToast("Ukuran foto terlalu besar", "Pilih foto dengan ukuran maksimal 5 MB.", "error");
       return;
     }
     if (!asset.base64) {
-      Alert.alert("Foto tidak dapat dibaca", "Silakan pilih foto lain dari galeri.");
+      showToast("Foto tidak dapat dibaca", "Silakan pilih foto lain dari galeri.", "error");
       return;
     }
     setProductImageUri(asset.uri);
@@ -238,22 +242,22 @@ export default function ProductsScreen() {
     const stock = Number(form.stock);
 
     if (name.length < 2) {
-      Alert.alert("Nama produk belum valid", "Nama produk minimal 2 karakter.");
+      showToast("Nama produk belum valid", "Nama produk minimal 2 karakter.", "error");
       return;
     }
 
     if (!form.categoryId) {
-      Alert.alert("Kategori belum dipilih", "Pilih kategori produk terlebih dahulu.");
+      showToast("Kategori belum dipilih", "Pilih kategori produk terlebih dahulu.", "error");
       return;
     }
 
     if (!Number.isInteger(price) || price < 100) {
-      Alert.alert("Harga belum valid", "Harga minimal Rp100.");
+      showToast("Harga belum valid", "Harga minimal Rp100.", "error");
       return;
     }
 
     if (!Number.isInteger(stock) || stock < 0) {
-      Alert.alert("Stok belum valid", "Stok harus berupa angka 0 atau lebih.");
+      showToast("Stok belum valid", "Stok harus berupa angka 0 atau lebih.", "error");
       return;
     }
 
@@ -275,7 +279,7 @@ export default function ProductsScreen() {
   if (productsQuery.isLoading) {
     return (
       <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-        <LoadingState />
+        <LoadingState variant="list" />
       </SafeAreaView>
     );
   }
@@ -290,7 +294,7 @@ export default function ProductsScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={25} color={theme.colors.ink} />
+            <Ionicons name="arrow-back" size={25} color={colors.ink} />
           </Pressable>
           <Text style={styles.toolbarTitle}>Menu</Text>
         </View>
@@ -349,7 +353,7 @@ export default function ProductsScreen() {
         ) : (
           <>
             <Pressable accessibilityRole="button" accessibilityLabel="Kembali" onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={25} color="#53635B" />
+              <Ionicons name="arrow-back" size={25} color="#6B7280" />
             </Pressable>
             <Text style={styles.toolbarTitle}>Menu</Text>
             <View style={styles.toolbarSpacer} />
@@ -358,7 +362,7 @@ export default function ProductsScreen() {
               setSearchVisible(true);
               Animated.timing(searchAnimation, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
             }} style={styles.toolbarIcon}>
-              <Ionicons name="search-outline" size={27} color="#53635B" />
+              <Ionicons name="search-outline" size={27} color="#6B7280" />
             </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Tambah" onPress={() => setAddMenuVisible(true)} style={styles.addButton}>
               <Ionicons name="add" size={24} color="#FFFFFF" />
@@ -457,9 +461,9 @@ export default function ProductsScreen() {
                           toggleProduct.mutate({ id: product.id, active })
                         }
                         disabled={toggleProduct.isPending}
-                        trackColor={{ false: "#D8DEDA", true: "#16835E" }}
+                        trackColor={{ false: "#E5E7EB", true: "#16835E" }}
                         thumbColor="#FFFFFF"
-                        ios_backgroundColor="#D8DEDA"
+                        ios_backgroundColor="#E5E7EB"
                         style={styles.switch}
                       />
                       <Pressable
@@ -468,7 +472,7 @@ export default function ProductsScreen() {
                         onPress={() => openEditForm(product)}
                         style={styles.editButton}
                       >
-                        <Ionicons name="create-outline" size={21} color="#56645D" />
+                        <Ionicons name="create-outline" size={21} color="#6B7280" />
                       </Pressable>
                     </View>
                   </View>
@@ -485,7 +489,7 @@ export default function ProductsScreen() {
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setAddMenuVisible(false)} />
           <View style={[styles.addMenuCard, { top: insets.top + 76 }]}>
             <Pressable style={styles.addMenuItem} onPress={openCreateForm}>
-              <Ionicons name="add" size={22} color="#17241D" />
+              <Ionicons name="add" size={22} color="#090909" />
               <Text style={styles.addMenuText}>Tambah Menu</Text>
             </Pressable>
             <Pressable style={styles.addMenuItem} onPress={() => {
@@ -493,7 +497,7 @@ export default function ProductsScreen() {
               setCategoryName("");
               setCategoryFormVisible(true);
             }}>
-              <Ionicons name="cube-outline" size={22} color="#17241D" />
+              <Ionicons name="cube-outline" size={22} color="#090909" />
               <Text style={styles.addMenuText}>Tambah Kategori</Text>
             </Pressable>
           </View>
@@ -508,7 +512,7 @@ export default function ProductsScreen() {
             <View style={styles.categoryDialogHeader}>
               <Text style={styles.categoryDialogTitle}>Tambah kategori</Text>
               <Pressable accessibilityRole="button" accessibilityLabel="Tutup" disabled={createCategory.isPending} onPress={() => setCategoryFormVisible(false)}>
-                <Ionicons name="close" size={23} color="#68756D" />
+                <Ionicons name="close" size={23} color="#6B7280" />
               </Pressable>
             </View>
             <Text style={styles.categoryDialogDescription}>Kategori dibuat untuk outlet yang sedang aktif.</Text>
@@ -552,7 +556,7 @@ export default function ProductsScreen() {
                   onPress={closeForm}
                   disabled={isSaving}
                 >
-                  <Ionicons name="close" size={25} color={theme.colors.muted} />
+                  <Ionicons name="close" size={25} color={colors.muted} />
                 </Pressable>
               </View>
             </View>
@@ -631,7 +635,7 @@ export default function ProductsScreen() {
                 )}
                 <View style={styles.productPhotoActions}>
                   <Pressable style={styles.productPhotoChoose} onPress={chooseProductImage} disabled={uploadProductImage.isPending || isSaving}>
-                    <Ionicons name="images-outline" size={18} color="#087B58" />
+                    <Ionicons name="images-outline" size={18} color="#F5B900" />
                     <Text style={styles.productPhotoChooseText}>{uploadProductImage.isPending ? "Mengunggah foto..." : productImageUri ? "Ganti foto" : "Pilih foto"}</Text>
                   </Pressable>
                   {productImageUri ? (
@@ -659,10 +663,11 @@ export default function ProductsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// [MODIFIED] Gunakan token warna tema yang mengikuti mode terang/gelap pada seluruh komponen layar.
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F1F7F3",
+    backgroundColor: colors.surface,
   },
   toolbar: {
     minHeight: 68,
@@ -670,9 +675,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     gap: 9,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#E1E9E3",
+    borderBottomColor: colors.line,
   },
   backButton: {
     width: 34,
@@ -681,7 +686,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   toolbarTitle: {
-    color: "#15231C",
+    color: colors.ink,
     fontFamily: "Archivo-Bold",
     fontSize: 20,
     fontWeight: "800",
@@ -704,8 +709,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: "#DCE6DF",
-    backgroundColor: "#F6F9F7",
+    borderColor: colors.line,
+    backgroundColor: colors.line,
     overflow: "hidden",
   },
   searchCloseButton: {
@@ -716,7 +721,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: "#17241D",
+    color: colors.ink,
     fontSize: 13,
     padding: 0,
   },
@@ -726,7 +731,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: "#087B58",
+    backgroundColor: "#F5B900",
   },
   content: {
     paddingHorizontal: 15,
@@ -759,7 +764,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#D6E1D9",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
   summaryItem: {
     flex: 1,
@@ -769,13 +774,13 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   summaryValue: {
-    color: "#15231C",
+    color: colors.ink,
     fontFamily: "Archivo-Bold",
     fontSize: 23,
     fontWeight: "800",
   },
   summaryLabel: {
-    color: "#68756D",
+    color: colors.muted,
     fontSize: 12,
   },
   categorySection: {
@@ -787,7 +792,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   categoryTitle: {
-    color: "#17241D",
+    color: colors.ink,
     fontFamily: "Archivo-Bold",
     fontSize: 19,
     fontWeight: "800",
@@ -801,7 +806,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#D6E1D9",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
   productRow: {
     // [MODIFIED] Konten baris lebih ringkas agar informasi dan aksi sejajar.
@@ -811,7 +816,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 9,
     paddingVertical: 8,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
   productDivider: {
     borderBottomWidth: 1,
@@ -835,7 +840,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E3F5EB",
   },
   productInitialText: {
-    color: "#087B58",
+    color: "#F5B900",
     fontFamily: "Archivo-Bold",
     fontSize: 23,
     fontWeight: "800",
@@ -846,7 +851,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   productName: {
-    color: "#18251E",
+    color: colors.ink,
     fontFamily: "Figtree-Bold",
     fontSize: 14,
     fontWeight: "800",
@@ -862,13 +867,13 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
   },
   price: {
-    color: "#17241D",
+    color: colors.ink,
     fontFamily: "Archivo-Bold",
     fontSize: 13,
     fontWeight: "800",
   },
   stock: {
-    color: "#68756D",
+    color: colors.muted,
     fontSize: 11,
   },
   productActions: {
@@ -899,7 +904,7 @@ const styles = StyleSheet.create({
     width: 250,
     paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: "#E0E8E2",
     shadowColor: "#000000",
@@ -916,7 +921,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   addMenuText: {
-    color: "#17241D",
+    color: colors.ink,
     fontSize: 15,
     fontWeight: "700",
   },
@@ -931,7 +936,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 20,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     gap: 10,
   },
   categoryDialogHeader: {
@@ -940,13 +945,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   categoryDialogTitle: {
-    color: "#17241D",
+    color: colors.ink,
     fontFamily: "Archivo-Bold",
     fontSize: 21,
     fontWeight: "800",
   },
   categoryDialogDescription: {
-    color: "#68756D",
+    color: colors.muted,
     fontSize: 13,
     marginTop: -6,
     marginBottom: 8,
@@ -964,10 +969,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: "#DCE6DF",
+    borderColor: colors.line,
   },
   categoryCancelText: {
-    color: "#17241D",
+    color: colors.ink,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -976,13 +981,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     justifyContent: "center",
     borderRadius: 11,
-    backgroundColor: "#087B58",
+    backgroundColor: "#F5B900",
   },
   categorySaveDisabled: {
     opacity: 0.5,
   },
   categorySaveText: {
-    color: "#FFFFFF",
+    color: colors.surface,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -990,7 +995,7 @@ const styles = StyleSheet.create({
   productPhotoCard: {
     padding: 12,
     borderWidth: 1,
-    borderColor: "#DCE6DF",
+    borderColor: colors.line,
     borderRadius: 14,
     backgroundColor: "#F8FBF9",
     gap: 10,
@@ -1014,7 +1019,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF5F1",
   },
   productPhotoPlaceholderText: {
-    color: "#68756D",
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -1033,10 +1038,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#CFE2D7",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
   productPhotoChooseText: {
-    color: "#087B58",
+    color: "#F5B900",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1058,7 +1063,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   productPhotoStatus: {
-    color: "#087B58",
+    color: "#F5B900",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -1077,7 +1082,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
   sheetHeader: {
     gap: 13,
@@ -1096,7 +1101,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   sheetTitle: {
-    color: "#17241D",
+    color: colors.ink,
     fontFamily: "Archivo-Bold",
     fontSize: 21,
     fontWeight: "800",
@@ -1106,7 +1111,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   fieldLabel: {
-    color: "#17241D",
+    color: colors.ink,
     fontSize: 13,
     fontWeight: "800",
     marginTop: 4,
@@ -1115,10 +1120,10 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 13,
     borderWidth: 1,
-    borderColor: "#DCE6DF",
+    borderColor: colors.line,
     borderRadius: 11,
-    color: "#17241D",
-    backgroundColor: "#FFFFFF",
+    color: colors.ink,
+    backgroundColor: colors.surface,
     fontSize: 14,
   },
   categoryChoices: {
@@ -1130,17 +1135,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 9,
     borderRadius: 20,
-    backgroundColor: "#EEF3EF",
+    backgroundColor: colors.line,
   },
   categoryChipActive: {
-    backgroundColor: "#087B58",
+    backgroundColor: "#F5B900",
   },
   categoryChipText: {
-    color: "#526158",
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "700",
   },
   categoryChipTextActive: {
-    color: "#FFFFFF",
+    color: colors.surface,
   },
 });

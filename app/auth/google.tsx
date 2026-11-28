@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useColorScheme } from "react-native";
+import { useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Screen } from "@/components/Screen";
-import { theme } from "@/constants/theme";
+import { getTheme, type ThemeColors } from "@/constants/theme";
 import { apiConfig } from "@/lib/api";
 import { persistSessionToken } from "@/lib/auth-session";
 import { trpc } from "@/providers/trpc";
 
 export default function GoogleAuthCallbackScreen() {
+  const colorScheme = useColorScheme();
+  const colors = useMemo(() => getTheme(colorScheme === "dark").colors, [colorScheme]);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{ code?: string; error?: string }>();
   const [message, setMessage] = useState("Menyelesaikan login Google...");
   const [failed, setFailed] = useState(false);
@@ -61,7 +65,7 @@ export default function GoogleAuthCallbackScreen() {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
-        {!failed ? <ActivityIndicator size="large" color={theme.colors.signal} /> : null}
+        {/* [REMOVED] Spinner login Google dihapus; status tetap dijelaskan melalui teks. */}
         <Text accessibilityRole="header" style={styles.title}>
           {failed ? "Login belum berhasil" : "Menghubungkan akun"}
         </Text>
@@ -76,9 +80,9 @@ export default function GoogleAuthCallbackScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, gap: 14 },
-  title: { color: theme.colors.ink, fontSize: 21, fontWeight: "800", textAlign: "center" },
-  message: { color: theme.colors.muted, fontSize: 14, lineHeight: 21, textAlign: "center" },
-  link: { marginTop: 10, color: theme.colors.signal, fontSize: 15, fontWeight: "700" },
+  title: { color: colors.ink, fontSize: 21, fontWeight: "800", textAlign: "center" },
+  message: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: "center" },
+  link: { marginTop: 10, color: colors.signal, fontSize: 15, fontWeight: "700" },
 });

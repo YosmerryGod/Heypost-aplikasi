@@ -5,8 +5,17 @@
     "scheme": "heypost",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#040404"
+        }
+      ],
       "expo-router",
       [
         "expo-secure-store",
@@ -31,7 +40,12 @@
       "bundleIdentifier": "tech.doodweb.heypost"
     },
     "android": {
-      "package": "tech.doodweb.heypost"
+      "softwareKeyboardLayoutMode": "resize",
+      "package": "tech.doodweb.heypost",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#040404"
+      }
     },
     "extra": {
       "router": {
@@ -48,6 +62,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/ec28fa30-ca43-4e2c-9b32-5392eb51ec81"
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }
